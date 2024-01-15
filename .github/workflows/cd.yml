@@ -28,8 +28,6 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{env.AWS_REGION}}
-    - name: Update kube config
-      run: echo aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
     ### Deploy ArgoCD Application, only run if application file was updated
     - uses: dorny/paths-filter@v2
       id: changes
@@ -37,6 +35,9 @@ jobs:
         filters: |
           application:
             - 'argocd/**'
-    - name: Deploy ArgoCD application
+    - name: Deploy ArgoCD application in Staging
       if: steps.changes.outputs.application == 'true'
-      run: echo kubectl apply -f argocd/application.yaml -f charts/values-${{ vars.STAGE }}.yaml
+      run: |
+        echo aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+        echo argocd repo add https://github.com/dlopezb93/sample-argocd-app-deployments --username <username> --password <password>
+        echo kubectl apply -f argocd/application.yaml -f charts/values-${{ vars.STAGE }}.yaml
