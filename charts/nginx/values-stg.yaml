@@ -1,5 +1,5 @@
 image:
   repository: nginx
-  tag: 1.1.0-rc.13
+  tag: 1.1.0-rc.19
 config:
   replicaCount: 2
