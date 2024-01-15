@@ -1,0 +1,42 @@
+name: Docker Image CI
+
+on: workflow_dispatch
+# on:
+#   push:
+#     branches: [ "main", "staging" ]
+
+permissions:
+  contents: write
+
+env:
+  ECR_REPOSITORY: nginx
+  EKS_CLUSTER_NAME: main-${{ vars.STAGE }}
+  AWS_REGION: us-east-1
+  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.ref_name }}
+    steps:
+    - name: Check out Code
+      uses: actions/checkout@v3
+    ### Configure AWS Access
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{env.AWS_REGION}}
+    - name: Update kube config
+      run: echo aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+    ### Deploy ArgoCD Application, only run if application file was updated
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          application:
+            - 'argocd/**'
+    - name: Deploy ArgoCD application
+      if: steps.changes.outputs.application == 'true'
+      run: echo kubectl apply -f argocd/application.yaml -f charts/values-${{ vars.STAGE }}.yaml

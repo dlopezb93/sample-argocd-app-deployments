@@ -1,0 +1,6 @@
+image:
+  repository: nginx
+  tag: latest
+  
+config:
+  replicaCount: 2
